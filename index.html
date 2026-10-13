@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Marvin Llamzon | Resume</title>
+<meta name="description" content="Marvin Llamzon, Lead MES Consultant and Software Engineer. An interactive resume that works like Windows Command Prompt.">
+<meta property="og:title" content="Marvin Llamzon | Resume">
+<meta property="og:description" content="Marvin Llamzon, Lead MES Consultant and Software Engineer. An interactive resume that works like Windows Command Prompt.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0c0c0c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='2' fill='%230c0c0c'/%3E%3Ctext x='2' y='12' font-family='monospace' font-size='9' font-weight='700' fill='%23cccccc'%3E%3E_%3C/text%3E%3C/svg%3E">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px/1.4 system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Inconsolata:wght@400;700&display=swap">
+<style>
+/* Layout: one console window filling the screen, title bar on top, scrolling buffer below.
+   Deliberately single-theme: a console is always black unless you run COLOR. */
+:root {
+  --desk: #050505;
+  --chrome: #1f1f1f;
+  --chrome-fg: #e6e6e6;
+  --chrome-dim: #9a9a9a;
+  --close: #c42b1c;
+  --bg: #0c0c0c;          /* changed by the COLOR command */
+  --fg: #cccccc;          /* changed by the COLOR command */
+  --mono: Consolas, "Cascadia Mono", "Lucida Console", "Inconsolata", "Courier New", monospace;
+  --ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--desk);
+  color: var(--fg);
+  padding-inline: 16px;
+  padding-block: 16px;
+  box-sizing: border-box;
+  display: flex;
+}
+.win {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 1100px;
+  margin: 0 auto;
+  border: 1px solid #3a3a3a;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6);
+  overflow: hidden;
+}
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  background: var(--chrome);
+  color: var(--chrome-fg);
+  font: 12px/1 var(--ui);
+  user-select: none;
+  flex: none;
+}
+.titlebar .icon {
+  margin-left: 10px;
+  width: 16px; height: 13px;
+  background: #0c0c0c;
+  border: 1px solid #8a8a8a;
+  border-top-width: 3px;
+  color: #cccccc;
+  font: 700 8px/9px var(--mono);
+  padding-left: 1px;
+  box-sizing: border-box;
+  flex: none;
+}
+.titlebar .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.controls { display: flex; height: 100%; }
+.controls button {
+  all: unset;
+  width: 46px; height: 100%;
+  display: grid; place-items: center;
+  color: var(--chrome-fg);
+  font: 14px/1 var(--ui);
+  cursor: default;
+}
+.controls button:hover { background: #333; }
+.controls button.x:hover { background: var(--close); color: #fff; }
+.controls button:focus-visible { outline: 1px solid var(--chrome-fg); outline-offset: -3px; }
+
+.term {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.25 var(--mono);
+  padding: 6px 8px 24px;
+  cursor: text;
+  scrollbar-color: #5a5a5a var(--bg);
+}
+.term::selection, .term *::selection { background: var(--fg); color: var(--bg); }
+.line { white-space: pre-wrap; word-break: break-word; min-height: 1.25em; }
+.term a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.term a:focus-visible, .cmdlink:focus-visible { outline: 1px dashed var(--fg); outline-offset: 1px; }
+.cmdlink { cursor: pointer; }
+.cmdlink:hover { background: var(--fg); color: var(--bg); }
+.bold { font-weight: 700; }
+.bul { display: block; padding-left: 4ch; text-indent: -2ch; }
+
+/* Name banner: scales to the window width; stacks onto two lines when narrow.
+   Divisors are column count x 0.6, a safe monospace character width. */
+.banner { container-type: inline-size; padding-block: 2px 8px; }
+.banner pre { margin: 0; font: inherit; line-height: 1; white-space: pre; overflow: hidden; }
+.banner pre { font-size: min(1em, calc(100cqw / (var(--cols, 120) * 0.62))); }
+.banner .tall { display: none; }
+@container (max-width: 640px) {
+  .banner .wide { display: none; }
+  .banner .tall { display: block; }
+}
+.banner .row { display: block; animation: draw-row .01s steps(1) both; }
+@keyframes draw-row { from { visibility: hidden; } to { visibility: visible; } }
+@media (prefers-reduced-motion: reduce) { .banner .row { animation: none; } }
+
+.prompt-line { white-space: pre-wrap; word-break: break-all; position: relative; }
+.cursor { display: inline-block; min-width: 1ch; box-shadow: inset 0 -0.16em 0 var(--fg); }
+.blink .cursor { animation: blink 1.06s steps(1) infinite; }
+@keyframes blink { 50% { box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .blink .cursor { animation: none; } }
+#cli {
+  position: absolute; left: 0; top: 0;
+  width: 1px; height: 1px;
+  opacity: 0; border: 0; padding: 0;
+  font-size: 16px; /* stops iOS zooming on focus */
+}
+.hidden-prompt { display: none; }
+
+/* DOS-style function-key bar: key number plain, label in reverse video */
+.fkeys {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+  font: 14px/1 var(--mono);
+}
+.fkeys button {
+  all: unset;
+  display: inline-flex;
+  align-items: stretch;
+  cursor: pointer;
+  color: var(--fg);
+}
+.fkeys .k { padding: 4px 3px 4px 0; }
+.fkeys .lbl { background: var(--fg); color: var(--bg); padding: 4px 6px; }
+.fkeys button:hover .lbl { filter: brightness(1.25); }
+.fkeys button:focus-visible { outline: 1px dashed var(--fg); outline-offset: 2px; }
+.status {
+  flex-basis: 100%;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+  gap: 4px 16px; padding-top: 4px; font-size: 13px; line-height: 1.4;
+}
+.status .hint { opacity: .7; min-width: 0; }
+.status .contact { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; min-width: 0; word-break: break-all; }
+.status a { color: var(--fg); text-underline-offset: 2px; }
+.status .copy { all: unset; cursor: pointer; color: var(--fg); }
+.status .copy:hover { background: var(--fg); color: var(--bg); }
+.status .copy:focus-visible { outline: 1px dashed var(--fg); outline-offset: 1px; }
+
+.tb-plain {
+  all: unset; flex: none; cursor: pointer;
+  font: 12px/1 var(--ui); color: var(--chrome-fg);
+  border: 1px solid #555; border-radius: 3px; padding: 4px 8px;
+}
+.tb-plain:hover { background: #333; }
+.tb-plain:focus-visible { outline: 1px solid var(--chrome-fg); outline-offset: 2px; }
+
+/* ---------- Plain view: a normal, scannable resume. Follows the viewer's light/dark theme. ---------- */
+:root {
+  --p-bg: #fbfbfc; --p-fg: #16181d; --p-muted: #5b6270; --p-rule: #dde0e6; --p-accent: #0037da; --p-scheme: light;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --p-bg: #111318; --p-fg: #e7e9ee; --p-muted: #9ba2ae; --p-rule: #2a2e37; --p-accent: #7aa0ff; --p-scheme: dark; }
+}
+:root[data-theme="dark"] { --p-bg: #111318; --p-fg: #e7e9ee; --p-muted: #9ba2ae; --p-rule: #2a2e37; --p-accent: #7aa0ff; --p-scheme: dark; }
+
+.plain {
+  position: fixed; inset: 0; z-index: 10;
+  overflow-y: auto;
+  background: var(--p-bg); color: var(--p-fg); color-scheme: var(--p-scheme);
+  font: 16px/1.55 var(--sans);
+  padding-inline: 16px;
+  padding-block: 0 env(safe-area-inset-bottom, 0px);
+}
+.p-bar {
+  position: sticky; top: 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin-inline: -16px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+  background: var(--p-bg); border-bottom: 1px solid var(--p-rule);
+  font: 13px/1.2 var(--mono);
+}
+.p-path { color: var(--p-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p-back {
+  flex: none; cursor: pointer; border: 0; border-radius: 2px;
+  background: var(--p-fg); color: var(--p-bg);
+  font: 13px/1 var(--mono); padding: 8px 12px;
+}
+.p-back:focus-visible, .plain .copy:focus-visible, .plain a:focus-visible { outline: 2px solid var(--p-accent); outline-offset: 2px; }
+.sheet { max-width: 46rem; margin: 0 auto; padding-block: 36px 72px; }
+.p-head h1 { margin: 0; font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.p-sub { margin: 6px 0 0; color: var(--p-muted); font-size: 1.05rem; }
+.p-contacts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-size: 15px; align-items: center; }
+.p-email { display: inline-flex; gap: 8px; align-items: center; word-break: break-all; }
+.plain a { color: var(--p-accent); text-underline-offset: 3px; }
+.plain .copy {
+  cursor: pointer; background: transparent; color: var(--p-fg);
+  border: 1px solid var(--p-rule); border-radius: 3px;
+  font: 12px/1 var(--mono); padding: 4px 8px;
+}
+.plain .copy:hover { border-color: var(--p-muted); }
+.plain section {
+  display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 0 24px;
+  padding-block: 24px; border-top: 1px solid var(--p-rule);
+}
+.p-head + section { margin-top: 28px; }
+.plain h2 {
+  margin: 4px 0 0; color: var(--p-accent);
+  font: 600 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .08em;
+}
+.plain p { margin: 0; max-width: 65ch; }
+.item + .item { margin-top: 20px; }
+.item-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 12px; }
+.item-head strong { font-weight: 600; }
+.p-co { color: var(--p-fg); }
+.p-company { margin: 0; font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
+.p-roleblock { margin-top: 12px; }
+.p-roleblock + .p-roleblock { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--p-rule); }
+.p-role { font-weight: 600; color: var(--p-fg); }
+.when { color: var(--p-muted); font: 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.p-place { color: var(--p-muted); font-size: 15px; }
+.plain ul { margin: 6px 0 0; padding-left: 1.1em; }
+.plain li + li { margin-top: 3px; }
+.p-skills { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 20px; margin: 0; }
+.p-skills dt { font-weight: 600; }
+.p-skills dd { margin: 0; }
+@media (max-width: 640px) {
+  .plain section { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .p-skills { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .p-skills dd + dt { margin-top: 8px; }
+}
+
+@media (max-width: 600px) {
+  .fkeys .k { display: none; }
+  .fkeys { gap: 6px; }
+  .fkeys .lbl { padding: 6px 8px; }
+  body { padding-inline: 0; padding-block: 0; }
+  .win { border: 0; }
+  .term { font-size: 14px; }
+  .controls button { width: 40px; }
+}
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">
+    <div class="icon" aria-hidden="true">&gt;_</div>
+    <div class="name" id="wintitle">Command Prompt</div>
+    <button type="button" class="tb-plain" id="btn-plain">Plain view</button>
+    <div class="controls">
+      <button type="button" aria-label="Minimize" title="Minimize" id="btn-min">&#x2500;</button>
+      <button type="button" aria-label="Maximize" title="Maximize" id="btn-max">&#x2610;</button>
+      <button type="button" class="x" aria-label="Close" title="Close" id="btn-close">&#x2715;</button>
+    </div>
+  </div>
+  <div class="term" id="term" role="log" aria-live="polite">
+    <div id="out"></div>
+    <div class="prompt-line blink" id="pl"><span id="ps"></span><span id="before"></span><span class="cursor" id="cur"> </span><span id="after"></span><input id="cli" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Command input"></div>
+  </div>
+  <nav class="fkeys" id="fkeys" aria-label="Resume shortcuts"></nav>
+</div>
+<main class="plain" id="plain" hidden aria-label="Plain resume"></main>
+
+<script>
+/* ======================================================================
+   EDIT YOUR RESUME HERE — everything on the site is generated from this.
+   ====================================================================== */
+const RESUME = {
+  name: "Marvin Llamzon",
+  title: "Lead MES Consultant & Software Engineer",
+  location: "Brea, CA",
+  summary: "Lead MES Consultant at Manufacturo with nearly five years of experience connecting manufacturing execution systems to ERP and PLM platforms, including NetSuite, SAP, Oracle, Costpoint and Infor LN. Leads integration and data-migration projects end to end, from design and documentation through delivery, and brings a full-stack software background in C#, Python and JavaScript.",
+  // Each company lists its roles newest first
+  experience: [
+    {
+      company: "Manufacturo", place: "",
+      roles: [
+        {
+          role: "Lead MES Consultant", dates: "Dec 2024 – Present",
+          bullets: [
+            "Designed and maintained standard integration documentation for the team to ensure consistency, traceability and seamless knowledge transfer across projects.",
+            "Led the integration between ERP (NetSuite) and Manufacturo, maintaining clear and comprehensive documentation of the design process."
+          ]
+        },
+        {
+          role: "Senior MES Consultant", dates: "Dec 2023 – Dec 2024",
+          bullets: [
+            "Led projects across 7 organizations involving integrations and scripts to deliver reliable, efficient and optimized solutions between Manufacturo and external systems.",
+            "Built and integrated a tool to track user limits, ensure compliance, enable proper billing and provide real-time sales visibility via the Microsoft Azure DevOps REST API.",
+            "Led the migration of 50,000+ records from an existing MES to Manufacturo with 100% accuracy across inventory, purchase orders, receipts and as-built genealogy data.",
+            "Used MuleSoft to integrate Infor LN and developed validation scripts to ensure accurate, reliable manufacturing order validations within the ERP.",
+            "Collaborated with cross-functional teams and external developers to design and implement detailed, effective solutions."
+          ]
+        },
+        {
+          role: "MES Consultant", dates: "Jun 2022 – Dec 2023",
+          bullets: [
+            "Developed comprehensive training materials to onboard new team members effectively.",
+            "Established a centralized repository for integrating and managing interfaces between MES, ERP and PLM systems.",
+            "Implemented robust C# interfaces integrating MES with ERP (SAP ERP, Oracle, Costpoint) and PLM (SAP) platforms, ensuring smooth data flow and interoperability.",
+            "Delivered prompt support and fixes for product bugs, minimizing disruption and maintaining system reliability."
+          ]
+        }
+      ]
+    },
+    {
+      company: "Big Tuna Solutions", place: "Los Angeles, CA",
+      roles: [
+        {
+          role: "Freelance Software Developer", dates: "Jan 2022 – Jan 2024",
+          bullets: [
+            "Implemented and maintained integrations between the web application and external funding services for multiple clients.",
+            "Researched and used AI-based tools to streamline workflows when deploying updates and onboarding additional lenders.",
+            "Maintained and updated the company's landing page, supporting overall business operations.",
+            "Collaborated directly with clients to integrate the platform with their existing tools and systems."
+          ]
+        }
+      ]
+    },
+    {
+      company: "Clearpol", place: "Los Angeles, CA",
+      roles: [
+        {
+          role: "Full Stack Software Engineer", dates: "Dec 2021 – Jun 2022",
+          bullets: [
+            "Designed and implemented a Django admin interface using third-party APIs to notify 10,000+ users of newly released content.",
+            "Implemented an end-to-end NLP pipeline with real-time web scraping to extract, parse and analyze medical policy documents.",
+            "Tracked user data using PostgreSQL combined with the Mixpanel analytics API.",
+            "Prototyped a containerization solution for the company's web application using Docker and Git.",
+            "Supported coordination of the company's internship program, including managing the interview process."
+          ]
+        }
+      ]
+    }
+  ],
+  education: [
+    { school: "University of California San Diego", place: "La Jolla, CA", degree: "B.S. in Mathematics – Computer Science", dates: "Dec 2021", notes: "" }
+  ],
+  skills: {
+    "Programming": ["C#", "Python", "JavaScript", "Java", "C++", "Azure SQL", "PostgreSQL", "MySQL", "HTML", "CSS"],
+    "Frameworks": [".NET", "Express", "Django", "Angular"],
+    "Technologies": ["Docker"],
+    "Project Management": ["Jira", "Confluence", "Azure DevOps"]
+  },
+  // Add projects here and a Projects section appears everywhere automatically
+  projects: [],
+  contact: {
+    email: "mllamzon@ucsd.edu",
+    phone: "",
+    linkedin: "https://www.linkedin.com/in/marvin-llamzon",
+    github: "",
+    website: ""
+  }
+};
+const HAS_PROJECTS = RESUME.projects.length > 0;
+const ROLE_COUNT = RESUME.experience.reduce((a, c) => a + c.roles.length, 0);
+// Name banner (ANSI Shadow block letters). Regenerate if the name changes.
+const BANNER_WIDE = ["███╗   ███╗ █████╗ ██████╗ ██╗   ██╗██╗███╗   ██╗    ██╗   ██╗    █████╗ ███╗   ███╗███████╗ ██████╗ ███╗   ██╗", "████╗ ████║██╔══██╗██╔══██╗██║   ██║██║████╗  ██║    ██║   ██║   ██╔══██╗████╗ ████║╚══███╔╝██╔═══██╗████╗  ██║", "██╔████╔██║███████║██████╔╝██║   ██║██║██╔██╗ ██║    ██║   ██║   ███████║██╔████╔██║  ███╔╝ ██║   ██║██╔██╗ ██║", "██║╚██╔╝██║██╔══██║██╔══██╗╚██╗ ██╔╝██║██║╚██╗██║    ██║   ██║   ██╔══██║██║╚██╔╝██║ ███╔╝  ██║   ██║██║╚██╗██║", "██║ ╚═╝ ██║██║  ██║██║  ██║ ╚████╔╝ ██║██║ ╚████║    █████╗█████╗██║  ██║██║ ╚═╝ ██║███████╗╚██████╔╝██║ ╚████║", "╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝    ╚════╝╚════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝"];
+const BANNER_TALL = ["███╗   ███╗ █████╗ ██████╗ ██╗   ██╗██╗███╗   ██╗", "████╗ ████║██╔══██╗██╔══██╗██║   ██║██║████╗  ██║", "██╔████╔██║███████║██████╔╝██║   ██║██║██╔██╗ ██║", "██║╚██╔╝██║██╔══██║██╔══██╗╚██╗ ██╔╝██║██║╚██╗██║", "██║ ╚═╝ ██║██║  ██║██║  ██║ ╚████╔╝ ██║██║ ╚████║", "╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝", "██╗   ██╗    █████╗ ███╗   ███╗███████╗ ██████╗ ███╗   ██╗", "██║   ██║   ██╔══██╗████╗ ████║╚══███╔╝██╔═══██╗████╗  ██║", "██║   ██║   ███████║██╔████╔██║  ███╔╝ ██║   ██║██╔██╗ ██║", "██║   ██║   ██╔══██║██║╚██╔╝██║ ███╔╝  ██║   ██║██║╚██╗██║", "█████╗█████╗██║  ██║██║ ╚═╝ ██║███████╗╚██████╔╝██║ ╚████║", "╚════╝╚════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝"];
+/* ====================================================================== */
+
+const $ = id => document.getElementById(id);
+const out = $("out"), term = $("term"), cli = $("cli");
+const psEl = $("ps"), beforeEl = $("before"), curEl = $("cur"), afterEl = $("after"), pl = $("pl");
+
+const HOME = "C:\\Users\\guest";
+const RES = HOME + "\\resume";
+let cwd = HOME;
+const history = [];
+let hIdx = 0;
+let busy = false;       // true while booting or paused
+let waitKey = null;     // callback for "press any key"
+
+// ---------- Resume files ----------
+const rule = n => "-".repeat(n);
+const files = {
+  "about.txt": () => [
+    [{ t: RESUME.name.toUpperCase(), cls: "bold" }],
+    RESUME.title + (RESUME.location ? "  |  " + RESUME.location : ""),
+    rule(48),
+    RESUME.summary
+  ],
+  "experience.txt": () => {
+    const L = [[{ t: "EXPERIENCE", cls: "bold" }], rule(48)];
+    RESUME.experience.forEach((c, i) => {
+      if (i) L.push("");
+      L.push([{ t: "[" + c.company.toUpperCase() + "]" + (c.place ? "  " + c.place : ""), cls: "bold" }]);
+      c.roles.forEach((r, j) => {
+        if (j) L.push("");
+        L.push("  " + r.role + "  |  " + r.dates);
+        r.bullets.forEach(b => L.push([{ t: "- " + b, cls: "bul" }]));
+      });
+    });
+    return L;
+  },
+  "education.txt": () => {
+    const L = [[{ t: "EDUCATION", cls: "bold" }], rule(48)];
+    RESUME.education.forEach((e, i) => {
+      if (i) L.push("");
+      L.push([{ t: e.school, cls: "bold" }]);
+      if (e.place) L.push(e.place);
+      L.push(e.degree + "  |  " + e.dates);
+      if (e.notes) L.push("  " + e.notes);
+    });
+    return L;
+  },
+  "skills.txt": () => {
+    const L = [[{ t: "SKILLS", cls: "bold" }], rule(48)];
+    const keys = Object.keys(RESUME.skills);
+    const w = Math.max(...keys.map(k => k.length)) + 2;
+    keys.forEach(k => L.push((k + ":").padEnd(w) + RESUME.skills[k].join(", ")));
+    return L;
+  },
+  "projects.txt": () => {
+    const L = [[{ t: "PROJECTS", cls: "bold" }], rule(48)];
+    RESUME.projects.forEach((p, i) => {
+      if (i) L.push("");
+      L.push([{ t: p.name, cls: "bold" }]);
+      L.push("  " + p.desc);
+      L.push("  Built with: " + p.tech);
+      if (p.link) L.push(["  ", { t: p.link, href: p.link }]);
+    });
+    return L;
+  },
+  "contact.txt": () => {
+    const c = RESUME.contact;
+    const L = [[{ t: "CONTACT", cls: "bold" }], rule(48)];
+    const row = (label, val, link) => { if (val) L.push([label.padEnd(10), link ? { t: val, href: val } : val]); };
+    row("Email", c.email); row("Phone", c.phone);
+    row("LinkedIn", c.linkedin, true); row("GitHub", c.github, true); row("Website", c.website, true);
+    return L;
+  }
+};
+if (!HAS_PROJECTS) delete files["projects.txt"];
+const readme = () => [
+  "Welcome! This is my resume, built to work like a Command Prompt.",
+  "",
+  "The files are in the resume folder. Try:",
+  ["  ", { t: "cd resume", cmd: "cd resume" }],
+  ["  ", { t: "dir", cmd: "dir" }],
+  ["  ", { t: "type about.txt", cmd: "type about.txt" }],
+  "",
+  ["Or type ", { t: "help", cmd: "help" }, " to see every command."]
+];
+
+const fs = {
+  [HOME]: { dirs: ["resume"], files: { "readme.txt": readme } },
+  [RES]: { dirs: [], files },
+  "C:\\": { dirs: ["Users"], files: {} },
+  "C:\\Users": { dirs: ["guest"], files: {} }
+};
+
+// ---------- Output ----------
+function seg(s) {
+  if (typeof s === "string") return document.createTextNode(s);
+  if (s.href) {
+    const a = document.createElement("a");
+    a.href = s.href; a.target = "_blank"; a.rel = "noopener"; a.textContent = s.t;
+    return a;
+  }
+  const span = document.createElement("span");
+  span.textContent = s.t;
+  if (s.cls) span.className = s.cls;
+  if (s.cmd) {
+    span.classList.add("cmdlink");
+    span.tabIndex = 0;
+    span.setAttribute("role", "button");
+    const go = () => typeOut(s.cmd);
+    span.addEventListener("click", e => { e.stopPropagation(); go(); });
+    span.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); go(); } });
+  }
+  return span;
+}
+function bannerNode() {
+  const wrap = document.createElement("div");
+  wrap.className = "banner";
+  wrap.setAttribute("role", "img");
+  wrap.setAttribute("aria-label", RESUME.name);
+  [["wide", BANNER_WIDE], ["tall", BANNER_TALL]].forEach(([cls, rows]) => {
+    const pre = document.createElement("pre");
+    pre.className = cls;
+    pre.setAttribute("aria-hidden", "true");
+    pre.style.setProperty("--cols", Math.max(...rows.map(r => r.length)));
+    rows.forEach((r, i) => {
+      const s = document.createElement("span");
+      s.className = "row";
+      s.style.animationDelay = (i * 45) + "ms";
+      s.textContent = r;
+      pre.appendChild(s);
+    });
+    wrap.appendChild(pre);
+  });
+  return wrap;
+}
+const printBanner = () => { out.appendChild(bannerNode()); };
+function print(line = "") {
+  if (typeof line === "function") { line(); return; }
+  const div = document.createElement("div");
+  div.className = "line";
+  (Array.isArray(line) ? line : [line]).forEach(s => div.appendChild(seg(s)));
+  out.appendChild(div);
+}
+const printAll = lines => lines.forEach(print);
+const scrollEnd = () => { term.scrollTop = term.scrollHeight; };
+
+// ---------- Loading animations ----------
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let booting = false, skipping = false;
+const SPIN = "|/-\\";
+const sleep = ms => new Promise(r => {
+  const end = performance.now() + ms;
+  (function check() { if (skipping || performance.now() >= end) r(); else setTimeout(check, 16); })();
+});
+function newLine(text = "") {
+  const d = document.createElement("div");
+  d.className = "line"; d.textContent = text;
+  out.appendChild(d); scrollEnd();
+  return d;
+}
+// "Label ...... |" spinning, then "Label ...... OK"
+async function spinLine(label, result, ms) {
+  const d = newLine(label);
+  const start = performance.now(); let f = 0;
+  while (!skipping && performance.now() - start < ms) {
+    d.textContent = label + " " + SPIN[f++ % 4];
+    await sleep(70);
+  }
+  d.textContent = label + " " + result;
+}
+// Progress bar that fills unevenly, like a real load
+async function progress(label, ms, doneText) {
+  if (REDUCE) { if (doneText) newLine(doneText); return; }
+  const W = 20, d = newLine();
+  let p = 0, f = 0;
+  const avg = 60 / ms;
+  while (p < 1 && !skipping) {
+    const n = Math.round(p * W);
+    d.textContent = `${label} ${SPIN[f++ % 4]} [${"█".repeat(n)}${"░".repeat(W - n)}] ${String(Math.round(p * 100)).padStart(3)}%`;
+    scrollEnd();
+    await sleep(60);
+    p = Math.min(1, p + avg * (0.2 + Math.random() * 1.6));
+  }
+  d.textContent = doneText || `${label}   [${"█".repeat(W)}] 100%`;
+}
+const load = (label, fn) => progress("Loading " + label, 450 + Math.random() * 350, "Loading " + label + "... done.").then(fn);
+
+// ---------- Prompt rendering ----------
+const prompt = () => cwd + ">";
+function render() {
+  psEl.textContent = prompt();
+  const v = cli.value, p = cli.selectionStart ?? v.length;
+  beforeEl.textContent = v.slice(0, p);
+  curEl.textContent = v[p] || " ";
+  afterEl.textContent = v.slice(p + 1);
+  pl.classList.remove("blink"); void pl.offsetWidth; pl.classList.add("blink");
+}
+function showPrompt(show) { pl.classList.toggle("hidden-prompt", !show); }
+
+// ---------- Helpers ----------
+const pad2 = n => String(n).padStart(2, "0");
+const now = new Date();
+function stamp(d = now) {
+  let h = d.getHours(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+  return `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}/${d.getFullYear()}  ${pad2(h)}:${pad2(d.getMinutes())} ${ap}`;
+}
+const commas = n => n.toLocaleString("en-US");
+const fileText = fn => fn().map(l => Array.isArray(l) ? l.map(s => typeof s === "string" ? s : s.t).join("") : l).join("\r\n");
+function resolve(arg) {
+  if (!arg) return cwd;
+  arg = arg.replace(/\//g, "\\").replace(/^"|"$/g, "");
+  let parts = /^[a-z]:/i.test(arg) ? [] : cwd.split("\\").filter(Boolean);
+  if (/^[a-z]:/i.test(arg)) { parts = ["C:"]; arg = arg.slice(2); }
+  if (arg.startsWith("\\")) parts = ["C:"];
+  for (const p of arg.split("\\").filter(Boolean)) {
+    if (p === ".") continue;
+    if (p === "..") { if (parts.length > 1) parts.pop(); continue; }
+    parts.push(p);
+  }
+  const path = parts.length === 1 ? "C:\\" : parts.join("\\");
+  const key = Object.keys(fs).find(k => k.toLowerCase() === path.toLowerCase());
+  return key || null;
+}
+function findFile(name) {
+  const dir = fs[cwd];
+  const n = (name || "").replace(/^"|"$/g, "").toLowerCase();
+  const key = Object.keys(dir.files).find(f => f.toLowerCase() === n);
+  return key ? dir.files[key] : null;
+}
+
+// ---------- Commands ----------
+const HELP = {
+  ABOUT: "Displays a short summary about me.",
+  EXPERIENCE: "Displays my work experience.",
+  EDUCATION: "Displays my education.",
+  SKILLS: "Displays my skills.",
+  PROJECTS: "Displays projects I have built.",
+  CONTACT: "Displays how to reach me.",
+  RESUME: "Displays the whole resume at once.",
+  PLAIN: "Switches to a plain, easy-to-read resume.",
+  BANNER: "Displays my name in big letters.",
+  CD: "Displays the name of or changes the current directory.",
+  CLS: "Clears the screen.",
+  COLOR: "Sets the default console foreground and background colors.",
+  DATE: "Displays the date.",
+  DIR: "Displays a list of files and subdirectories in a directory.",
+  DOSKEY: "Use DOSKEY /HISTORY to show commands you have typed.",
+  ECHO: "Displays messages.",
+  EXIT: "Quits the CMD.EXE program (command interpreter).",
+  HELP: "Provides Help information for commands.",
+  HOSTNAME: "Prints the name of this computer.",
+  PAUSE: "Suspends processing and displays a message.",
+  TIME: "Displays the system time.",
+  TITLE: "Sets the window title for a CMD.EXE session.",
+  TREE: "Graphically displays the directory structure of a drive or path.",
+  TYPE: "Displays the contents of a text file.",
+  VER: "Displays the version.",
+  WHOAMI: "Displays the current user."
+};
+const PALETTE = ["#0C0C0C","#0037DA","#13A10E","#3A96DD","#C50F1F","#881798","#C19C00","#CCCCCC",
+                 "#767676","#3B78FF","#16C60C","#61D6D6","#E74856","#B4009E","#F9F1A5","#F2F2F2"];
+const VERSION = "ResumeOS [Version 10.0.2026.1010]";
+
+const section = name => () => load(name, () => { print(); printAll(files[name]()); print(); });
+const commands = {
+  about: section("about.txt"),
+  experience: section("experience.txt"),
+  education: section("education.txt"),
+  skills: section("skills.txt"),
+  projects: section("projects.txt"),
+  contact: section("contact.txt"),
+  resume() {
+    const list = ["about.txt","experience.txt","education.txt","skills.txt","projects.txt","contact.txt"].filter(f => files[f]);
+    return load("resume (" + list.length + " files)", () => {
+      print();
+      list.forEach(f => { printAll(files[f]()); print(); });
+    });
+  },
+  help(args) {
+    if (args) {
+      const k = args.trim().split(/\s+/)[0].toUpperCase();
+      if (HELP[k]) { print(HELP[k]); print(); }
+      else { print("This command is not supported by the help utility.  Try \"" + k.toLowerCase() + " /?\"."); print(); }
+      return;
+    }
+    print("For more information on a specific command, type HELP command-name");
+    print();
+    print([{ t: "RESUME", cls: "bold" }]);
+    ["ABOUT","EXPERIENCE","EDUCATION","SKILLS","PROJECTS","CONTACT","RESUME","PLAIN"].filter(k => HELP[k]).forEach(k =>
+      print([{ t: k, cmd: k.toLowerCase() }, " ".repeat(15 - k.length) + HELP[k]]));
+    print();
+    print([{ t: "SYSTEM", cls: "bold" }]);
+    Object.keys(HELP).filter(k => !["ABOUT","EXPERIENCE","EDUCATION","SKILLS","PROJECTS","CONTACT","RESUME","PLAIN"].includes(k)).forEach(k =>
+      print([{ t: k, cmd: k === "DOSKEY" ? "doskey /history" : k.toLowerCase() }, " ".repeat(15 - k.length) + HELP[k]]));
+    print();
+    print("Tip: Up/Down arrows recall commands. Tab completes names.");
+    print("A few hidden commands are waiting to be found.");
+    print();
+  },
+  cls() { out.innerHTML = ""; },
+  ver() { print(); print(VERSION); print(); },
+  whoami() { print("resume-pc\\guest"); print(); },
+  hostname() { print("RESUME-PC"); print(); },
+  date() { const d = new Date(); print("The current date is: " + d.toLocaleDateString("en-US", { weekday: "short" }) + " " + `${pad2(d.getMonth()+1)}/${pad2(d.getDate())}/${d.getFullYear()}`); print(); },
+  time() { const d = new Date(); print("The current time is: " + `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}.${pad2(Math.floor(d.getMilliseconds()/10))}`); print(); },
+  echo(args, raw) {
+    const a = raw.replace(/^echo\.?\s?/i, "");
+    if (/^echo\./i.test(raw) && !a) { print(""); return; }
+    if (!a.trim()) { print("ECHO is on."); print(); return; }
+    print(a); print();
+  },
+  title(args) { $("wintitle").textContent = args || "Command Prompt"; },
+  color(args) {
+    const a = (args || "").trim();
+    if (!a) { setColor("07"); return; }
+    if (!/^[0-9a-f]{1,2}$/i.test(a)) { print("Sets the default console foreground and background colors."); print(); print("COLOR [attr]"); print(); print("  attr        Specifies color attribute of console output"); print(); print("Color attributes are specified by TWO hex digits -- the first"); print("corresponds to the background; the second the foreground."); print(); print("    0 = Black       8 = Gray"); print("    1 = Blue        9 = Light Blue"); print("    2 = Green       A = Light Green"); print("    3 = Aqua        B = Light Aqua"); print("    4 = Red         C = Light Red"); print("    5 = Purple      D = Light Purple"); print("    6 = Yellow      E = Light Yellow"); print("    7 = White       F = Bright White"); print(); print("Example: \"COLOR 0A\" produces light green on black"); print(); return; }
+    const v = a.length === 1 ? "0" + a : a;
+    if (v[0].toLowerCase() === v[1].toLowerCase()) return; // cmd silently refuses same fg/bg
+    setColor(v);
+  },
+  cd(args) {
+    if (!args) { print(cwd); print(); return; }
+    const t = resolve(args.trim());
+    if (!t) { print("The system cannot find the path specified."); print(); return; }
+    cwd = t;
+    print();
+  },
+  dir(args) {
+    const target = args ? resolve(args.trim()) : cwd;
+    if (!target) { print("File Not Found"); print(); return; }
+    const d = fs[target];
+    print(" Volume in drive C has no label.");
+    print(" Volume Serial Number is 2026-1010");
+    print();
+    print(" Directory of " + target);
+    print();
+    const ts = stamp();
+    let nd = 0;
+    if (target !== "C:\\") {
+      print(ts + "    <DIR>          ."); print(ts + "    <DIR>          .."); nd = 2;
+    }
+    d.dirs.forEach(n => { print([ts + "    <DIR>          ", target === cwd ? { t: n, cmd: "cd " + n } : n]); nd++; });
+    let total = 0;
+    Object.keys(d.files).forEach(n => {
+      const size = fileText(d.files[n]).length; total += size;
+      print([ts + "  " + commas(size).padStart(16) + " ", target === cwd ? { t: n, cmd: "type " + n } : n]);
+    });
+    const nf = Object.keys(d.files).length;
+    print(String(nf).padStart(16) + " File(s) " + commas(total).padStart(14) + " bytes");
+    print(String(nd).padStart(16) + " Dir(s)  " + commas(256431620096).padStart(14) + " bytes free");
+    print();
+  },
+  type(args) {
+    if (!args) { print("The syntax of the command is incorrect."); print(); return; }
+    const f = findFile(args.trim());
+    if (!f) {
+      const isDir = fs[cwd].dirs.some(d => d.toLowerCase() === args.trim().toLowerCase());
+      print(isDir ? "Access is denied." : "The system cannot find the file specified.");
+      print(); return;
+    }
+    const name = Object.keys(fs[cwd].files).find(n => fs[cwd].files[n] === f);
+    return load(name, () => { print(); printAll(f()); print(); });
+  },
+  tree() {
+    print("Folder PATH listing");
+    print("Volume serial number is 2026-1010");
+    if (cwd === HOME) { print("C:\\USERS\\GUEST"); print("\u2514\u2500\u2500\u2500resume"); }
+    else if (cwd === RES) { print("C:\\USERS\\GUEST\\RESUME"); print("No subfolders exist"); }
+    else if (cwd === "C:\\Users") { print("C:\\USERS"); print("\u2514\u2500\u2500\u2500guest"); print("    \u2514\u2500\u2500\u2500resume"); }
+    else { print("C:."); print("\u2514\u2500\u2500\u2500Users"); print("    \u2514\u2500\u2500\u2500guest"); print("        \u2514\u2500\u2500\u2500resume"); }
+    print();
+  },
+  doskey(args) {
+    if (/\/history/i.test(args || "")) { history.forEach(h => print(h)); print(); }
+    else print();
+  },
+  pause() {
+    print("Press any key to continue . . . ");
+    busy = true; showPrompt(false);
+    waitKey = () => { print(); busy = false; showPrompt(true); render(); scrollEnd(); };
+  },
+  exit() {
+    out.innerHTML = "";
+    showPrompt(false); busy = true;
+    print("[process exited with code 0]");
+    print();
+    print("Press any key, or tap here, to open a new window.");
+    waitKey = () => { boot(); };
+  }
+};
+commands.chdir = commands.cd;
+commands.banner = () => { print(); printBanner(); print([{ t: RESUME.title, cls: "bold" }]); print(); };
+if (!HAS_PROJECTS) { delete commands.projects; delete HELP.PROJECTS; }
+
+// ---------- Plain view command + easter eggs ----------
+const HIDDEN = ["sudo", "coffee", "hire", "ping", "del", "rm", "format", "erase"];
+const UNIX_HINTS = { ls: "DIR", cat: "TYPE", clear: "CLS", pwd: "CD", man: "HELP", mv: null, nano: null, vim: null };
+function notRecognized(first) {
+  print("'" + first + "' is not recognized as an internal or external command,");
+  print("operable program or batch file.");
+  const h = UNIX_HINTS[first.toLowerCase()];
+  if (h) print(["(This is Windows. Try ", { t: h, cmd: h.toLowerCase() }, ".)"]);
+  else if (first.toLowerCase() in UNIX_HINTS) print("(This is Windows, so that one won't work here.)");
+}
+Object.assign(commands, {
+  plain() { showPlain(true); print("Opened plain view. Press Esc or Back to terminal to return."); print(); },
+  sudo() {
+    notRecognized("sudo");
+    print("Nice try. On Windows you would right-click and choose Run as administrator.");
+    print();
+  },
+  del() { print("Access is denied. This resume is read-only."); print(); },
+  format() { print("Access is denied. Let's keep the hard drive, and the resume, intact."); print(); },
+  coffee() {
+    return progress("Brewing coffee", 900).then(() => {
+      print();
+      printAll(["      ( (", "       ) )", "    ........", "    |      |]", "    \\      /", "     `----'"]);
+      print();
+      print(["Here's a coffee. Let's talk about the role over a real one: type ", { t: "contact", cmd: "contact" }, "."]);
+      print();
+    });
+  },
+  hire() {
+    return progress("Running hire.exe", 900).then(() => {
+      print();
+      print([{ t: "Great choice.", cls: "bold" }]);
+      print("Here is the fastest way to reach me:");
+      print();
+      printAll(files["contact.txt"]().slice(2));
+      print();
+    });
+  },
+  async ping(args) {
+    const t = (args || "").trim();
+    const addr = RESUME.contact.email || "127.0.0.1";
+    if (t && !/^(you|me|localhost|resume|127\.0\.0\.1)$/i.test(t)) {
+      print("Ping request could not find host " + t + ". Please check the name and try again.");
+      print(); return;
+    }
+    print();
+    print("Pinging " + RESUME.name + " [" + addr + "] with 32 bytes of enthusiasm:");
+    for (let i = 0; i < 4; i++) { await sleep(450); print("Reply from " + addr + ": bytes=32 time<1ms TTL=128"); scrollEnd(); }
+    print();
+    print("Ping statistics for " + addr + ":");
+    print("    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),");
+    print();
+    print(["Always available. Type ", { t: "contact", cmd: "contact" }, " to reach me."]);
+    print();
+  }
+});
+commands.rm = commands.erase = commands.del;
+commands.cls.noBlank = true;
+
+function setColor(v) {
+  document.documentElement.style.setProperty("--bg", PALETTE[parseInt(v[0], 16)]);
+  document.documentElement.style.setProperty("--fg", PALETTE[parseInt(v[1], 16)]);
+}
+
+// ---------- Run ----------
+function run(raw) {
+  const line = raw.trim();
+  if (!line) return;
+  // Support "cd.." / "cd\" style without a space, like real cmd
+  const m = line.match(/^([a-z]+)(\.\.|\\.*|\.\s*$)?(?:\s+(.*))?$/i) || [null, line, "", ""];
+  let name = (m[1] || "").toLowerCase();
+  let args = (m[3] || "").trim();
+  if (m[2] && (name === "cd" || name === "chdir")) args = m[2] + (args ? " " + args : "");
+  if (/\/\?$/.test(line) && commands[name]) { commands.help(name); return; }
+  const fn = commands[name];
+  if (fn && !(m[2] && name !== "cd" && name !== "chdir" && name !== "echo")) return fn(args, line);
+  // Typing a file name opens it, as Windows would
+  if (findFile(line)) return commands.type(line);
+  notRecognized(line.split(/\s+/)[0]);
+  print();
+}
+
+function submit(cmdText) {
+  print(prompt() + cmdText);
+  if (cmdText.trim()) { history.push(cmdText); }
+  hIdx = history.length;
+  cli.value = "";
+  const r = run(cmdText);
+  if (r && r.then) {
+    busy = true; showPrompt(false);
+    r.then(() => { busy = false; showPrompt(true); render(); scrollEnd(); focusCli(); });
+  } else if (!busy) render();
+  scrollEnd();
+  focusCli();
+}
+
+// Types a command into the prompt one key at a time, then runs it,
+// so visitors who click see exactly what to type next time.
+function typeOut(cmdText, done) {
+  if (booting) { skipping = true; return; }
+  if (busy) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { submit(cmdText); done && done(); return; }
+  busy = true; cli.value = ""; render(); scrollEnd();
+  let i = 0;
+  (function step() {
+    if (i < cmdText.length) {
+      cli.value += cmdText[i++];
+      cli.setSelectionRange(cli.value.length, cli.value.length);
+      render();
+      setTimeout(step, 45);
+    } else {
+      setTimeout(() => { busy = false; submit(cmdText); done && done(); }, 160);
+    }
+  })();
+}
+
+// ---------- Shortcut bar ----------
+const FKEYS = [
+  ["F1", "Help", "help"],
+  ["F2", "About", "about"],
+  ["F3", "Experience", "experience"],
+  ["F4", "Education", "education"],
+  ["F5", "Skills", "skills"],
+  ["F6", "Projects", "projects"],
+  ["F7", "Contact", "contact"],
+  ["F8", "Full resume", "resume"],
+  ["F9", "Clear", "cls"],
+  ["F10", "Plain view", "plain"]
+].filter(f => commands[f[2]]).map((f, i) => ["F" + (i + 1), f[1], f[2]]);
+const fbar = $("fkeys");
+FKEYS.forEach(([k, label, cmd]) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.title = "Runs: " + cmd;
+  b.innerHTML = `<span class="k"></span><span class="lbl"></span>`;
+  b.querySelector(".k").textContent = k;
+  b.querySelector(".lbl").textContent = label;
+  b.addEventListener("click", () => typeOut(cmd));
+  fbar.appendChild(b);
+});
+// Status row: hint on the left, contact details always visible on the right
+const status = document.createElement("div");
+status.className = "status";
+const hint = document.createElement("span");
+hint.className = "hint";
+hint.textContent = "New here? Click a button above, or type a word like about and press Enter.";
+const contactBox = document.createElement("span");
+contactBox.className = "contact";
+(() => {
+  const c = RESUME.contact;
+  if (c.email) {
+    const wrap = document.createElement("span");
+    const t = document.createElement("span"); t.textContent = c.email;
+    const b = document.createElement("button"); b.type = "button"; b.className = "copy"; b.textContent = "[Copy]";
+    b.addEventListener("click", e => { e.stopPropagation(); copyText(c.email, b, t); });
+    wrap.append(t, " ", b);
+    contactBox.append(wrap);
+  }
+  [["LinkedIn", c.linkedin], ["GitHub", c.github], ["Website", c.website]].forEach(([label, href]) => {
+    if (!href) return;
+    const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = label;
+    contactBox.append(a);
+  });
+})();
+status.append(hint, contactBox);
+fbar.appendChild(status);
+
+function copyText(txt, btn, node) {
+  const label = btn.textContent;
+  const done = msg => { btn.textContent = msg; setTimeout(() => { btn.textContent = label; }, 1600); };
+  const fallback = () => {
+    try { const r = document.createRange(); r.selectNodeContents(node); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) {}
+    done("Press Ctrl+C");
+  };
+  try { navigator.clipboard.writeText(txt).then(() => done("Copied"), fallback); } catch (e) { fallback(); }
+}
+
+// ---------- Plain view ----------
+const plain = $("plain"), win = document.querySelector(".win");
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function extLink(href, text) { const a = el("a", null, text); a.href = href; a.target = "_blank"; a.rel = "noopener"; return a; }
+function buildPlain() {
+  plain.innerHTML = "";
+  const bar = el("div", "p-bar");
+  const back = el("button", "p-back", "Back to terminal");
+  back.type = "button"; back.id = "p-back";
+  back.addEventListener("click", () => showPlain(false));
+  bar.append(el("span", "p-path", RES + "\\resume.txt"), back);
+  plain.append(bar);
+
+  const sheet = el("article", "sheet");
+  const head = el("header", "p-head");
+  head.append(el("h1", null, RESUME.name), el("p", "p-sub", RESUME.title + (RESUME.location ? " · " + RESUME.location : "")));
+  const c = RESUME.contact, row = el("div", "p-contacts");
+  if (c.email) {
+    const w = el("span", "p-email"), t = el("span", null, c.email), b = el("button", "copy", "Copy");
+    b.type = "button"; b.addEventListener("click", () => copyText(c.email, b, t));
+    w.append(t, b); row.append(w);
+  }
+  if (c.phone) row.append(el("span", null, c.phone));
+  [["LinkedIn", c.linkedin], ["GitHub", c.github], ["Website", c.website]].forEach(([l, h]) => { if (h) row.append(extLink(h, l)); });
+  head.append(row);
+  sheet.append(head);
+
+  const sec = title => { const s = el("section"), body = el("div"); s.append(el("h2", null, title), body); sheet.append(s); return body; };
+  sec("Summary").append(el("p", null, RESUME.summary));
+
+  const ex = sec("Experience");
+  RESUME.experience.forEach(c => {
+    const it = el("div", "item");
+    it.append(el("h3", "p-company", c.company));
+    if (c.place) it.append(el("div", "p-place", c.place));
+    c.roles.forEach(r => {
+      const role = el("div", "p-roleblock"), h = el("div", "item-head");
+      h.append(el("span", "p-role", r.role), el("span", "when", r.dates));
+      const ul = el("ul");
+      r.bullets.forEach(b => ul.append(el("li", null, b)));
+      role.append(h, ul);
+      it.append(role);
+    });
+    ex.append(it);
+  });
+
+  const ed = sec("Education");
+  RESUME.education.forEach(e => {
+    const it = el("div", "item"), h = el("div", "item-head"), left = el("div");
+    left.append(el("strong", null, e.school));
+    h.append(left, el("span", "when", e.dates));
+    it.append(h, el("div", null, e.degree));
+    if (e.place) it.append(el("div", "p-place", e.place));
+    if (e.notes) it.append(el("div", "p-place", e.notes));
+    ed.append(it);
+  });
+
+  const dl = el("dl", "p-skills");
+  Object.entries(RESUME.skills).forEach(([k, v]) => dl.append(el("dt", null, k), el("dd", null, v.join(", "))));
+  sec("Skills").append(dl);
+
+  const pr = HAS_PROJECTS ? sec("Projects") : null;
+  RESUME.projects.forEach(p => {
+    const it = el("div", "item"), h = el("div", "item-head"), left = el("div");
+    left.append(el("strong", null, p.name));
+    h.append(left);
+    if (p.link) h.append(extLink(p.link, "View project"));
+    it.append(h, el("div", null, p.desc), el("div", "p-place", "Built with " + p.tech));
+    pr.append(it);
+  });
+  plain.append(sheet);
+}
+function showPlain(on) {
+  plain.hidden = !on;
+  win.hidden = on;
+  if (on) { plain.scrollTop = 0; try { $("p-back").focus({ preventScroll: true }); } catch (e) {} }
+  else { scrollEnd(); focusCli(); }
+}
+$("btn-plain").addEventListener("click", () => showPlain(true));
+
+// ---------- Tab completion ----------
+let tabState = null;
+function complete() {
+  const v = cli.value;
+  if (!tabState) {
+    const sp = v.lastIndexOf(" ");
+    const head = sp >= 0 ? v.slice(0, sp + 1) : "";
+    const frag = v.slice(sp + 1).toLowerCase();
+    const pool = sp >= 0
+      ? [...fs[cwd].dirs, ...Object.keys(fs[cwd].files)]
+      : [...Object.keys(commands).filter(k => !HIDDEN.includes(k)), ...Object.keys(fs[cwd].files)];
+    const matches = pool.filter(p => p.toLowerCase().startsWith(frag));
+    if (!matches.length) return;
+    tabState = { head, matches, i: 0 };
+  } else {
+    tabState.i = (tabState.i + 1) % tabState.matches.length;
+  }
+  cli.value = tabState.head + tabState.matches[tabState.i];
+  cli.setSelectionRange(cli.value.length, cli.value.length);
+  render();
+}
+
+// ---------- Input wiring ----------
+function focusCli() { if (!busy) try { cli.focus({ preventScroll: true }); } catch (e) { cli.focus(); } }
+
+cli.addEventListener("input", () => { tabState = null; render(); });
+cli.addEventListener("keyup", render);
+cli.addEventListener("select", render);
+cli.addEventListener("keydown", e => {
+  if (busy) { e.preventDefault(); return; }
+  if (e.key !== "Tab") tabState = null;
+  if (e.key === "Enter") { e.preventDefault(); submit(cli.value); }
+  else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    if (hIdx > 0) { hIdx--; cli.value = history[hIdx]; cli.setSelectionRange(cli.value.length, cli.value.length); render(); }
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    if (hIdx < history.length - 1) { hIdx++; cli.value = history[hIdx]; }
+    else { hIdx = history.length; cli.value = ""; }
+    cli.setSelectionRange(cli.value.length, cli.value.length); render();
+  } else if (e.key === "Tab") { e.preventDefault(); complete(); }
+  else if (e.key === "Escape") { e.preventDefault(); cli.value = ""; render(); }
+  else if (e.key === "c" && e.ctrlKey && cli.selectionStart === cli.selectionEnd) {
+    e.preventDefault(); print(prompt() + cli.value + "^C"); cli.value = ""; render(); scrollEnd();
+  }
+  requestAnimationFrame(render);
+});
+
+document.addEventListener("keydown", e => {
+  if (!plain.hidden) { if (e.key === "Escape") showPlain(false); return; }
+  const fk = !e.ctrlKey && !e.altKey && !e.metaKey && FKEYS.find(f => f[0] === e.key);
+  if (booting) { e.preventDefault(); skipping = true; return; }
+  if (fk && !waitKey) { e.preventDefault(); typeOut(fk[2]); return; }
+  if (waitKey && !["Shift","Control","Alt","Meta"].includes(e.key)) { e.preventDefault(); const k = waitKey; waitKey = null; k(); return; }
+  if (!busy && document.activeElement !== cli && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1 && !e.target.closest?.(".cmdlink, a, button")) {
+    focusCli();
+  }
+});
+term.addEventListener("click", () => {
+  if (booting) { skipping = true; return; }
+  if (waitKey) { const k = waitKey; waitKey = null; k(); return; }
+  const sel = window.getSelection();
+  if (!sel || !sel.toString()) focusCli();
+});
+
+$("btn-close").addEventListener("click", () => { if (!busy) submit("exit"); });
+$("btn-min").addEventListener("click", () => { if (!busy) submit("cls"); });
+$("btn-max").addEventListener("click", () => {
+  const w = document.querySelector(".win");
+  w.style.maxWidth = w.style.maxWidth ? "" : "none";
+  focusCli();
+});
+
+// ---------- Boot ----------
+async function boot() {
+  out.innerHTML = "";
+  cwd = HOME; busy = true; waitKey = null;
+  showPrompt(false);
+  $("wintitle").textContent = "Command Prompt";
+  const reduce = REDUCE;
+
+  if (!reduce) {
+    booting = true; skipping = false;
+    const n = (k, one, many) => k + " " + (k === 1 ? one : many);
+    const skillCount = Object.values(RESUME.skills).reduce((a, s) => a + s.length, 0);
+    newLine("ResumeOS Boot Manager");
+    newLine("Press any key or tap to skip.");
+    newLine("");
+    const steps = [
+      ["Initializing console", "OK"],
+      ["Mounting C:\\Users\\guest\\resume", "OK"],
+      ["Reading about.txt", "OK"],
+      ["Loading experience", n(ROLE_COUNT, "role", "roles")],
+      ["Loading education", n(RESUME.education.length, "entry", "entries")],
+      ["Loading skills", n(skillCount, "skill", "skills")],
+      ...(HAS_PROJECTS ? [["Loading projects", n(RESUME.projects.length, "project", "projects")]] : []),
+      ["Checking contact info", "OK"]
+    ];
+    for (const [label, result] of steps) {
+      await spinLine(label.padEnd(34, ".") + " ", result, 160 + Math.random() * 220);
+    }
+    newLine("");
+    await progress("Starting Command Prompt", 800);
+    await sleep(300);
+    out.innerHTML = "";
+    booting = false; skipping = false;
+  }
+
+  const intro = [
+    VERSION,
+    "(c) " + now.getFullYear() + " " + RESUME.name + ". All rights reserved.",
+    "",
+    printBanner,
+    [{ t: RESUME.title, cls: "bold" }],
+    "",
+    ["Welcome. Type ", { t: "help", cmd: "help" }, " for a list of commands, or use the shortcuts at the bottom."],
+    ""
+  ];
+  if (reduce) { printAll(intro); finish(); return; }
+  let i = 0;
+  (function next() {
+    if (i >= intro.length) { finish(); return; }
+    print(intro[i++]); scrollEnd();
+    setTimeout(next, 90);
+  })();
+  function finish() {
+    busy = false; showPrompt(true); render(); scrollEnd();
+    // Show something real right away instead of an empty prompt
+    setTimeout(() => typeOut("about", focusCli), reduce ? 0 : 400);
+  }
+}
+render();
+buildPlain();
+// A link ending in #plain opens straight to the plain resume (handy for recruiters)
+if (location.hash === "#plain") showPlain(true);
+boot();
+</script>
+</body>
+</html>
